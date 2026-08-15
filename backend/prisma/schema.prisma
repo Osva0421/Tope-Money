@@ -1,0 +1,48 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// MODELOS DE TOPE MONEY
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  categories   Category[]
+  transactions Transaction[]
+}
+
+model Category {
+  id           String        @id @default(uuid())
+  name         String
+  type         String
+  icon         String?
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  parentId     String?
+  parent       Category?     @relation("CategoryToSubcategory", fields: [parentId], references: [id])
+  children     Category[]    @relation("CategoryToSubcategory")
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String    @id @default(uuid())
+  amount      Float
+  description String?   // Podemos usar esto para notas extra
+  merchant    String    // NUEVO: Para el "comercio"
+  type        String    // 'INCOME' o 'EXPENSE'
+  isPlanned   Boolean   // NUEVO: true = previsto, false = imprevisto
+  date        DateTime  @default(now())
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+}
