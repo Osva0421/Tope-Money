@@ -3,18 +3,31 @@ import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  // Lista las categorías y, de paso, trae los datos del usuario dueño
   async getAllCategories() {
-    return this.prisma.category.findMany({
-      include: { user: true }, 
-    });
+    return this.prisma.category.findMany();
   }
 
   // Crea una categoría asociada a un usuario
-  async createCategory(data: { name: string; type: string; userId: string; icon?: string }) {
+  async createCategory(data: {
+    name: string;
+    type: string;
+    userId: string;
+    icon?: string;
+    parentId?: string;
+  }) {
     return this.prisma.category.create({
+      data,
+    });
+  }
+
+  async updateCategory(
+    id: string,
+    data: { keywords?: string[]; name?: string; icon?: string },
+  ) {
+    return this.prisma.category.update({
+      where: { id },
       data,
     });
   }

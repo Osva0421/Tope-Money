@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
 
 @Controller('categories')
@@ -11,9 +11,18 @@ export class CategoriesController {
   }
 
   @Post()
-createCategory(
-  @Body() body: { name: string; type: string; userId: string; icon?: string; parentId?: string },
-) {
-  return this.categoriesService.createCategory(body);
-}
+  createCategory(
+    @Body()
+    body: { name: string; type: string; userId: string; icon?: string; parentId?: string },
+  ) {
+    return this.categoriesService.createCategory(body);
+  }
+
+  @Patch(':id')
+  updateCategory(
+    @Param('id') id: string,
+    @Body() body: { keywords?: string[]; name?: string; icon?: string },
+  ) {
+    return this.categoriesService.updateCategory(id, body);
+  }
 }

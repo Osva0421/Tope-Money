@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service'; // Ajusta la ruta a tu PrismaService
+import { PrismaService } from '../prisma/prisma.service';
+import { CategorizationService } from '../categories/categorization.service';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categorizationService: CategorizationService,
+  ) {}
 
   async create(data: {
     amount: number;
@@ -14,28 +18,42 @@ export class TransactionsService {
     userId: string;
     categoryId?: string;
   }) {
+    let categoryId: string | null = data.categoryId ?? null;
+    let categoryAssignedBy: string | null = null;
+
+    if (categoryId) {
+      categoryAssignedBy = 'user';
+    } else {
+      const suggested = await this.categorizationService.suggestCategory(
+        data.userId,
+        data.merchant,
+      );
+      if (suggested) {
+        categoryId = suggested;
+        categoryAssignedBy = 'rule';
+      }
+    }
+
     return this.prisma.transaction.create({
-      data: {
-        amount: data.amount,
-        description: data.description,
-        merchant: data.merchant,
-        type: data.type,
-        isPlanned: data.isPlanned,
-        userId: data.userId,
-        categoryId: data.categoryId,
-      },
+      data: { ...data, categoryId, categoryAssignedBy },
     });
   }
 
   async findAllByUser(userId: string) {
-    return this.prisma.transaction.findMany({
-      where: { userId },
-      include: {
-        category: true,
-      },
-      orderBy: {
-        date: 'desc',
-      },
+    return this.prisma.transaction.findMany({ where: { userId } });
+  }
+
+  async correctCategory(transactionId: string, categoryId: string) {
+    const transaction = await this.prisma.transaction.update({
+      where: { id: transactionId },
+      data: { categoryId, categoryAssignedBy: 'user' },
     });
+
+    await this.categorizationService.learnFromCorrection(
+      categoryId,
+      transaction.merchant,
+    );
+
+    return transaction;
   }
 }

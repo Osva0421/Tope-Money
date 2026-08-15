@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, Query } from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
 
 @Controller('transactions')
@@ -24,5 +24,13 @@ export class TransactionsController {
   @Get()
   async findAll(@Query('userId') userId: string) {
     return this.transactionsService.findAllByUser(userId);
+  }
+
+  @Patch(':id')
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() body: { categoryId: string },
+  ) {
+    return this.transactionsService.correctCategory(id, body.categoryId);
   }
 }
