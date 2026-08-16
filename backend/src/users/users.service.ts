@@ -1,20 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CategoriesService } from '../categories/categories.service';
 
 @Injectable()
 export class UsersService {
-  // Inyectamos nuestra conexión a la base de datos
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly categoriesService: CategoriesService,
+  ) {}
 
-  // Creamos nuestro primer método para interactuar con la tabla de usuarios
   async getAllUsers() {
     return this.prisma.user.findMany();
   }
 
-  //Se crea un nuevo usuario
-  async createUser(data: { email: string; name?: string }) {
-    return this.prisma.user.create({
-        data,
-    });
+  async createUser(data: { id?: string; email: string; name?: string }) {
+    const user = await this.prisma.user.create({ data });
+
+    // En cuanto se crea el usuario, se le arma su árbol de categorías base.
+    await this.categoriesService.createDefaultCategoriesForUser(user.id);
+
+    return user;
   }
 }

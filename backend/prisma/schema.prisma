@@ -21,7 +21,8 @@ model User {
 model Category {
   id           String        @id @default(uuid())
   name         String
-  type         String
+  type         String        // 'EXPENSE' | 'INCOME'
+  nature       String        // 'ESSENTIAL' | 'DISCRETIONARY' | 'OTHER'
   icon         String?
   userId       String
   user         User          @relation(fields: [userId], references: [id])
@@ -30,6 +31,7 @@ model Category {
   children     Category[]    @relation("CategoryToSubcategory")
   transactions Transaction[]
   keywords     String[]      @default([])
+  isDefault    Boolean       @default(false) // true = viene de la plantilla base, no la creó el usuario
 }
 
 model Transaction {

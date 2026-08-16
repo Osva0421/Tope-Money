@@ -23,6 +23,9 @@ export class TransactionsService {
 
     if (categoryId) {
       categoryAssignedBy = 'user';
+      // El usuario eligió la categoría a mano: el sistema aprende de esto
+      // para reconocer el mismo comercio automáticamente la próxima vez.
+      await this.categorizationService.learnFromCorrection(categoryId, data.merchant);
     } else {
       const suggested = await this.categorizationService.suggestCategory(
         data.userId,

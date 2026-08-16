@@ -13,12 +13,18 @@ import { Category, TransactionType } from '../types';
 
 interface Props {
   onSaved: () => void;
+  initialAmount?: string;
+  initialMerchant?: string;
 }
 
-export default function CaptureScreen({ onSaved }: Props) {
+export default function CaptureScreen({
+  onSaved,
+  initialAmount,
+  initialMerchant,
+}: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [amount, setAmount] = useState('');
-  const [merchant, setMerchant] = useState('');
+  const [amount, setAmount] = useState(initialAmount ?? '');
+  const [merchant, setMerchant] = useState(initialMerchant ?? '');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [type, setType] = useState<TransactionType>('expense');
   const [isPlanned, setIsPlanned] = useState(true);
@@ -29,6 +35,16 @@ export default function CaptureScreen({ onSaved }: Props) {
       .then(setCategories)
       .catch((err) => Alert.alert('Error cargando categorías', err.message));
   }, []);
+
+  // Si llega un ticket nuevo desde el OCR mientras esta pantalla ya está
+  // abierta, actualiza el formulario con los valores detectados.
+  useEffect(() => {
+    if (initialAmount !== undefined) setAmount(initialAmount);
+  }, [initialAmount]);
+
+  useEffect(() => {
+    if (initialMerchant !== undefined) setMerchant(initialMerchant);
+  }, [initialMerchant]);
 
   // Agrupa categorías raíz (sin padre) con su lista de subcategorías,
   // igual que en el árbol Usuario -> Categoría -> Subcategoría.
@@ -230,3 +246,4 @@ const styles = StyleSheet.create({
   saveButtonDisabled: { opacity: 0.5 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
+

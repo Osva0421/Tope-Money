@@ -13,7 +13,14 @@ export class CategoriesController {
   @Post()
   createCategory(
     @Body()
-    body: { name: string; type: string; userId: string; icon?: string; parentId?: string },
+    body: {
+      name: string;
+      type: string;
+      nature: string;
+      userId: string;
+      icon?: string;
+      parentId?: string;
+    },
   ) {
     return this.categoriesService.createCategory(body);
   }

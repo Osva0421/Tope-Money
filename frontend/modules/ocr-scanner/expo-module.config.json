@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["OcrScannerModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.ocrscanner.OcrScannerModule"]
+  }
+}
