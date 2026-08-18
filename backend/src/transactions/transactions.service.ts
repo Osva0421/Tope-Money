@@ -23,8 +23,6 @@ export class TransactionsService {
 
     if (categoryId) {
       categoryAssignedBy = 'user';
-      // El usuario eligió la categoría a mano: el sistema aprende de esto
-      // para reconocer el mismo comercio automáticamente la próxima vez.
       await this.categorizationService.learnFromCorrection(categoryId, data.merchant);
     } else {
       const suggested = await this.categorizationService.suggestCategory(
@@ -46,16 +44,35 @@ export class TransactionsService {
     return this.prisma.transaction.findMany({ where: { userId } });
   }
 
-  async correctCategory(transactionId: string, categoryId: string) {
+  // Edición general: monto, comercio, descripción, previsto/imprevisto y/o categoría.
+  // Cualquier combinación de estos campos es válida (todos opcionales).
+  async updateTransaction(
+    transactionId: string,
+    data: {
+      amount?: number;
+      merchant?: string;
+      description?: string;
+      isPlanned?: boolean;
+      categoryId?: string;
+    },
+  ) {
+    const updateData: Record<string, unknown> = { ...data };
+
+    if (data.categoryId) {
+      updateData.categoryAssignedBy = 'user';
+    }
+
     const transaction = await this.prisma.transaction.update({
       where: { id: transactionId },
-      data: { categoryId, categoryAssignedBy: 'user' },
+      data: updateData,
     });
 
-    await this.categorizationService.learnFromCorrection(
-      categoryId,
-      transaction.merchant,
-    );
+    if (data.categoryId) {
+      await this.categorizationService.learnFromCorrection(
+        data.categoryId,
+        transaction.merchant,
+      );
+    }
 
     return transaction;
   }

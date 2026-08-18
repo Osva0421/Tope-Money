@@ -13,14 +13,34 @@ import CaptureScreen from './src/screens/CaptureScreen';
 import TransactionsListScreen from './src/screens/TransactionsListScreen';
 import { recognizeText } from './modules/ocr-scanner/src';
 import { parseReceiptText } from './src/utils/receiptParser';
+import { Transaction, TransactionType } from './src/types';
 
 type Tab = 'capture' | 'list';
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('capture');
   const [refreshKey, setRefreshKey] = useState(0);
+
   const [scannedAmount, setScannedAmount] = useState<string | undefined>();
   const [scannedMerchant, setScannedMerchant] = useState<string | undefined>();
+
+  // Estado de edición: cuando no es undefined, CaptureScreen entra en modo edición.
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(
+    null,
+  );
+
+  function resetCaptureState() {
+    setScannedAmount(undefined);
+    setScannedMerchant(undefined);
+    setEditingTransaction(null);
+  }
+
+  function handleEditTransaction(transaction: Transaction) {
+    setEditingTransaction(transaction);
+    setScannedAmount(String(transaction.amount));
+    setScannedMerchant(transaction.merchant);
+    setTab('capture');
+  }
 
   async function processReceiptImage(photoUri: string) {
     try {
@@ -35,6 +55,7 @@ export default function App() {
         return;
       }
 
+      resetCaptureState();
       setScannedAmount(parsed.amount !== null ? String(parsed.amount) : undefined);
       setScannedMerchant(parsed.merchant ?? undefined);
       setTab('capture');
@@ -46,18 +67,13 @@ export default function App() {
   async function scanWithCamera() {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
-        'Falta permiso',
-        'Necesitas darle permiso de cámara a la app en Configuración.',
-      );
+      Alert.alert('Falta permiso', 'Necesitas darle permiso de cámara a la app.');
       return;
     }
-
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
     });
-
     if (result.canceled) return;
     await processReceiptImage(result.assets[0].uri);
   }
@@ -65,18 +81,13 @@ export default function App() {
   async function pickFromGallery() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert(
-        'Falta permiso',
-        'Necesitas darle permiso de fotos a la app en Configuración.',
-      );
+      Alert.alert('Falta permiso', 'Necesitas darle permiso de fotos a la app.');
       return;
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 1,
     });
-
     if (result.canceled) return;
     await processReceiptImage(result.assets[0].uri);
   }
@@ -88,7 +99,10 @@ export default function App() {
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, tab === 'capture' && styles.tabActive]}
-          onPress={() => setTab('capture')}
+          onPress={() => {
+            resetCaptureState();
+            setTab('capture');
+          }}
         >
           <Text style={tab === 'capture' ? styles.tabTextActive : styles.tabText}>
             Capturar
@@ -104,25 +118,33 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.scanButtons}>
-        <Button title="📷 Escanear con cámara" onPress={scanWithCamera} />
-        <View style={{ height: 8 }} />
-        <Button title="🖼️ Elegir ticket de galería" onPress={pickFromGallery} />
-      </View>
+      {tab === 'capture' && !editingTransaction && (
+        <View style={styles.scanButtons}>
+          <Button title="📷 Escanear con cámara" onPress={scanWithCamera} />
+          <View style={{ height: 8 }} />
+          <Button title="🖼️ Elegir ticket de galería" onPress={pickFromGallery} />
+        </View>
+      )}
 
       {tab === 'capture' ? (
         <CaptureScreen
           initialAmount={scannedAmount}
           initialMerchant={scannedMerchant}
+          editingTransactionId={editingTransaction?.id}
+          initialType={editingTransaction?.type as TransactionType | undefined}
+          initialIsPlanned={editingTransaction?.isPlanned}
+          initialCategoryId={editingTransaction?.categoryId ?? undefined}
           onSaved={() => {
             setRefreshKey((k) => k + 1);
-            setScannedAmount(undefined);
-            setScannedMerchant(undefined);
+            resetCaptureState();
             setTab('list');
           }}
         />
       ) : (
-        <TransactionsListScreen refreshKey={refreshKey} />
+        <TransactionsListScreen
+          refreshKey={refreshKey}
+          onEditTransaction={handleEditTransaction}
+        />
       )}
     </SafeAreaView>
   );

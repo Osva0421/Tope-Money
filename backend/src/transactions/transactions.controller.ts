@@ -27,10 +27,17 @@ export class TransactionsController {
   }
 
   @Patch(':id')
-  async updateCategory(
+  async update(
     @Param('id') id: string,
-    @Body() body: { categoryId: string },
+    @Body()
+    body: {
+      amount?: number;
+      merchant?: string;
+      description?: string;
+      isPlanned?: boolean;
+      categoryId?: string;
+    },
   ) {
-    return this.transactionsService.correctCategory(id, body.categoryId);
+    return this.transactionsService.updateTransaction(id, body);
   }
 }

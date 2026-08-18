@@ -32,8 +32,7 @@ export default function TransactionsListScreen({
       ]);
       // Más recientes primero
       txs.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       setTransactions(txs);
       setCategories(cats);

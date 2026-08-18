@@ -8,27 +8,49 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
-import { getCategories, createTransaction } from '../api/client';
+import {
+  getCategories,
+  createTransaction,
+  createCategory,
+  updateTransaction,
+} from '../api/client';
 import { Category, TransactionType } from '../types';
 
 interface Props {
   onSaved: () => void;
   initialAmount?: string;
   initialMerchant?: string;
+  // Si viene un editingTransactionId, la pantalla entra en "modo edición":
+  // el botón dice "Guardar cambios" y llama a updateTransaction en vez de crear una nueva.
+  editingTransactionId?: string;
+  initialType?: TransactionType;
+  initialIsPlanned?: boolean;
+  initialCategoryId?: string | null;
 }
 
 export default function CaptureScreen({
   onSaved,
   initialAmount,
   initialMerchant,
+  editingTransactionId,
+  initialType,
+  initialIsPlanned,
+  initialCategoryId,
 }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [amount, setAmount] = useState(initialAmount ?? '');
   const [merchant, setMerchant] = useState(initialMerchant ?? '');
-  const [categoryId, setCategoryId] = useState<string | null>(null);
-  const [type, setType] = useState<TransactionType>('expense');
-  const [isPlanned, setIsPlanned] = useState(true);
+  const [categoryId, setCategoryId] = useState<string | null>(
+    initialCategoryId ?? null,
+  );
+  const [type, setType] = useState<TransactionType>(initialType ?? 'expense');
+  const [isPlanned, setIsPlanned] = useState(initialIsPlanned ?? true);
   const [saving, setSaving] = useState(false);
+
+  // Texto libre para cuando se elige "Otros"
+  const [otherCategoryText, setOtherCategoryText] = useState('');
+
+  const isEditing = Boolean(editingTransactionId);
 
   useEffect(() => {
     getCategories()
@@ -36,8 +58,6 @@ export default function CaptureScreen({
       .catch((err) => Alert.alert('Error cargando categorías', err.message));
   }, []);
 
-  // Si llega un ticket nuevo desde el OCR mientras esta pantalla ya está
-  // abierta, actualiza el formulario con los valores detectados.
   useEffect(() => {
     if (initialAmount !== undefined) setAmount(initialAmount);
   }, [initialAmount]);
@@ -46,8 +66,6 @@ export default function CaptureScreen({
     if (initialMerchant !== undefined) setMerchant(initialMerchant);
   }, [initialMerchant]);
 
-  // Agrupa categorías raíz (sin padre) con su lista de subcategorías,
-  // igual que en el árbol Usuario -> Categoría -> Subcategoría.
   const groupedCategories = useMemo(() => {
     const roots = categories.filter((c) => !c.parentId);
     return roots.map((root) => ({
@@ -55,6 +73,35 @@ export default function CaptureScreen({
       children: categories.filter((c) => c.parentId === root.id),
     }));
   }, [categories]);
+
+  const otrosRoot = useMemo(
+    () => categories.find((c) => c.nature === 'OTHER' && !c.parentId),
+    [categories],
+  );
+  const isOtrosSelected = otrosRoot !== undefined && categoryId === otrosRoot.id;
+
+  async function resolveCategoryId(): Promise<string | null> {
+    // Si el usuario eligió "Otros" y escribió un texto, primero hay que
+    // convertir ese texto en una subcategoría real (reutilizando una ya
+    // creada con el mismo nombre si existe, para no duplicar).
+    if (isOtrosSelected && otherCategoryText.trim() && otrosRoot) {
+      const normalizedInput = otherCategoryText.trim().toUpperCase();
+      const existing = categories.find(
+        (c) => c.parentId === otrosRoot.id && c.name.toUpperCase() === normalizedInput,
+      );
+      if (existing) return existing.id;
+
+      const created = await createCategory({
+        name: otherCategoryText.trim(),
+        type: type === 'income' ? 'INCOME' : 'EXPENSE',
+        nature: 'OTHER',
+        parentId: otrosRoot.id,
+      });
+      return created.id;
+    }
+
+    return categoryId;
+  }
 
   async function handleSave() {
     const numericAmount = Number(amount.replace(',', '.'));
@@ -67,21 +114,40 @@ export default function CaptureScreen({
       Alert.alert('Falta el comercio', 'Escribe dónde fue el gasto/ingreso.');
       return;
     }
+    if (isOtrosSelected && !otherCategoryText.trim()) {
+      Alert.alert('Falta el nombre', 'Escribe qué tipo de categoría es.');
+      return;
+    }
 
     setSaving(true);
     try {
-      await createTransaction({
-        amount: numericAmount,
-        merchant: merchant.trim(),
-        categoryId,
-        type,
-        isPlanned,
-      });
-      setAmount('');
-      setMerchant('');
-      setCategoryId(null);
-      setType('expense');
-      setIsPlanned(true);
+      const finalCategoryId = await resolveCategoryId();
+
+      if (isEditing && editingTransactionId) {
+        await updateTransaction(editingTransactionId, {
+          amount: numericAmount,
+          merchant: merchant.trim(),
+          categoryId: finalCategoryId ?? undefined,
+          isPlanned,
+        });
+      } else {
+        await createTransaction({
+          amount: numericAmount,
+          merchant: merchant.trim(),
+          categoryId: finalCategoryId,
+          type,
+          isPlanned,
+        });
+      }
+
+      if (!isEditing) {
+        setAmount('');
+        setMerchant('');
+        setCategoryId(null);
+        setOtherCategoryText('');
+        setType('expense');
+        setIsPlanned(true);
+      }
       onSaved();
     } catch (err: any) {
       Alert.alert('Error al guardar', err.message);
@@ -167,13 +233,25 @@ export default function CaptureScreen({
         </Text>
       )}
 
+      {isOtrosSelected && (
+        <View style={{ marginTop: 8 }}>
+          <Text style={styles.label}>¿Qué tipo de gasto/ingreso es?</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ej. Regalo, Trámite, Multa..."
+            value={otherCategoryText}
+            onChangeText={setOtherCategoryText}
+          />
+        </View>
+      )}
+
       <TouchableOpacity
         style={[styles.saveButton, saving && styles.saveButtonDisabled]}
         onPress={handleSave}
         disabled={saving}
       >
         <Text style={styles.saveButtonText}>
-          {saving ? 'Guardando...' : 'Guardar'}
+          {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Guardar'}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -246,4 +324,3 @@ const styles = StyleSheet.create({
   saveButtonDisabled: { opacity: 0.5 },
   saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
-
