@@ -4,16 +4,26 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { Pool } from 'pg';
 import * as dotenv from 'dotenv';
 
-// 1. Forzamos la carga del archivo .env antes de que Prisma intente conectarse
-dotenv.config();
+// Las credenciales locales viven en .env.local y la configuración compartida
+// en .env. Cargamos ambas sin sobrescribir variables ya definidas por hosting.
+dotenv.config({ path: ['.env.local', '.env'], quiet: true });
 
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   constructor() {
-    // 2. Usamos Pool de pg con la URL de Supabase
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error(
+        'Falta DATABASE_URL en backend/.env.local o backend/.env',
+      );
+    }
+
+    const pool = new Pool({ connectionString: databaseUrl });
     const adapter = new PrismaPg(pool);
-    
+
     super({ adapter });
   }
 

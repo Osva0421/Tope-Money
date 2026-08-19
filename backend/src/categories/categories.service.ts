@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_CATEGORY_TREE,
@@ -9,8 +9,11 @@ import {
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getAllCategories() {
-    return this.prisma.category.findMany();
+  async getAllCategories(userId: string) {
+    return this.prisma.category.findMany({
+      where: { userId },
+      orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
+    });
   }
 
   // Crea una categoría asociada a un usuario (uso manual, ej. "Otros" con texto libre)
@@ -22,6 +25,14 @@ export class CategoriesService {
     icon?: string;
     parentId?: string;
   }) {
+    if (data.parentId) {
+      const parent = await this.prisma.category.findFirst({
+        where: { id: data.parentId, userId: data.userId },
+      });
+      if (!parent) {
+        throw new NotFoundException('Categoría superior no encontrada');
+      }
+    }
     return this.prisma.category.create({
       data,
     });
@@ -29,8 +40,13 @@ export class CategoriesService {
 
   async updateCategory(
     id: string,
+    userId: string,
     data: { keywords?: string[]; name?: string; icon?: string },
   ) {
+    const category = await this.prisma.category.findFirst({
+      where: { id, userId },
+    });
+    if (!category) throw new NotFoundException('Categoría no encontrada');
     return this.prisma.category.update({
       where: { id },
       data,
@@ -70,4 +86,3 @@ export class CategoriesService {
     }
   }
 }
-

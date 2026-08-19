@@ -21,7 +21,12 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
       { name: 'Renta', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🏘️' },
       { name: 'Luz', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '💡' },
       { name: 'Internet', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '📶' },
-      { name: 'Reparaciones', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🔧' },
+      {
+        name: 'Reparaciones',
+        type: 'EXPENSE',
+        nature: 'ESSENTIAL',
+        icon: '🔧',
+      },
     ],
   },
   {
@@ -30,7 +35,12 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
     nature: 'ESSENTIAL',
     icon: '🎓',
     children: [
-      { name: 'Colegiaturas', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🏫' },
+      {
+        name: 'Colegiaturas',
+        type: 'EXPENSE',
+        nature: 'ESSENTIAL',
+        icon: '🏫',
+      },
       { name: 'Cursos', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '📖' },
       { name: 'Exámenes', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '📝' },
     ],
@@ -44,7 +54,12 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
       { name: 'Doctor', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🩺' },
       { name: 'Farmacia', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '💊' },
       { name: 'Lentes', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '👓' },
-      { name: 'Exámenes médicos', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🧪' },
+      {
+        name: 'Exámenes médicos',
+        type: 'EXPENSE',
+        nature: 'ESSENTIAL',
+        icon: '🧪',
+      },
     ],
   },
   {
@@ -58,7 +73,14 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
         type: 'EXPENSE',
         nature: 'ESSENTIAL',
         icon: '🛒',
-        keywords: ['WALMART', 'SORIANA', 'CHEDRAUI', 'COSTCO', 'SAMS', 'LA COMER'],
+        keywords: [
+          'WALMART',
+          'SORIANA',
+          'CHEDRAUI',
+          'COSTCO',
+          'SAMS',
+          'LA COMER',
+        ],
       },
     ],
   },
@@ -69,8 +91,18 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
     icon: '🚗',
     children: [
       { name: 'Gasolina', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '⛽' },
-      { name: 'Transporte público', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🚌' },
-      { name: 'Mantenimiento', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🔩' },
+      {
+        name: 'Transporte público',
+        type: 'EXPENSE',
+        nature: 'ESSENTIAL',
+        icon: '🚌',
+      },
+      {
+        name: 'Mantenimiento',
+        type: 'EXPENSE',
+        nature: 'ESSENTIAL',
+        icon: '🔩',
+      },
     ],
   },
   {
@@ -79,7 +111,12 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
     nature: 'ESSENTIAL',
     icon: '💳',
     children: [
-      { name: 'Pago tarjeta de crédito', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '💳' },
+      {
+        name: 'Pago tarjeta de crédito',
+        type: 'EXPENSE',
+        nature: 'ESSENTIAL',
+        icon: '💳',
+      },
       { name: 'Préstamos', type: 'EXPENSE', nature: 'ESSENTIAL', icon: '🏦' },
     ],
   },
@@ -108,9 +145,19 @@ export const DEFAULT_CATEGORY_TREE: DefaultCategoryTemplate[] = [
         nature: 'DISCRETIONARY',
         icon: '🍬',
       },
-      { name: 'Entretenimiento', type: 'EXPENSE', nature: 'DISCRETIONARY', icon: '🎮' },
+      {
+        name: 'Entretenimiento',
+        type: 'EXPENSE',
+        nature: 'DISCRETIONARY',
+        icon: '🎮',
+      },
       { name: 'Joyería', type: 'EXPENSE', nature: 'DISCRETIONARY', icon: '💍' },
-      { name: 'Suscripciones', type: 'EXPENSE', nature: 'DISCRETIONARY', icon: '🔁' },
+      {
+        name: 'Suscripciones',
+        type: 'EXPENSE',
+        nature: 'DISCRETIONARY',
+        icon: '🔁',
+      },
     ],
   },
   {

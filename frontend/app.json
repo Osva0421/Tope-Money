@@ -8,7 +8,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.frontend",
+      "bundleIdentifier": "com.osvaldo21.topemoney",
       "infoPlist": {
         "NSCameraUsageDescription": "Tope Money necesita acceder a tu cámara para escanear tickets y detectar tus gastos automáticamente."
       }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,20 @@ import {
   ScrollView,
   Alert,
   StyleSheet,
-} from 'react-native';
+} from "react-native";
 import {
   getCategories,
   createTransaction,
   createCategory,
   updateTransaction,
-} from '../api/client';
-import { Category, TransactionType } from '../types';
+} from "../api/client";
+import { Category, TransactionType } from "../types";
 
 interface Props {
   onSaved: () => void;
   initialAmount?: string;
   initialMerchant?: string;
+  initialDate?: string;
   // Si viene un editingTransactionId, la pantalla entra en "modo edición":
   // el botón dice "Guardar cambios" y llama a updateTransaction en vez de crear una nueva.
   editingTransactionId?: string;
@@ -32,30 +33,34 @@ export default function CaptureScreen({
   onSaved,
   initialAmount,
   initialMerchant,
+  initialDate,
   editingTransactionId,
   initialType,
   initialIsPlanned,
   initialCategoryId,
 }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [amount, setAmount] = useState(initialAmount ?? '');
-  const [merchant, setMerchant] = useState(initialMerchant ?? '');
+  const [amount, setAmount] = useState(initialAmount ?? "");
+  const [merchant, setMerchant] = useState(initialMerchant ?? "");
+  const [date, setDate] = useState(
+    initialDate ?? new Date().toISOString().slice(0, 10),
+  );
   const [categoryId, setCategoryId] = useState<string | null>(
     initialCategoryId ?? null,
   );
-  const [type, setType] = useState<TransactionType>(initialType ?? 'expense');
+  const [type, setType] = useState<TransactionType>(initialType ?? "expense");
   const [isPlanned, setIsPlanned] = useState(initialIsPlanned ?? true);
   const [saving, setSaving] = useState(false);
 
   // Texto libre para cuando se elige "Otros"
-  const [otherCategoryText, setOtherCategoryText] = useState('');
+  const [otherCategoryText, setOtherCategoryText] = useState("");
 
   const isEditing = Boolean(editingTransactionId);
 
   useEffect(() => {
     getCategories()
       .then(setCategories)
-      .catch((err) => Alert.alert('Error cargando categorías', err.message));
+      .catch((err) => Alert.alert("Error cargando categorías", err.message));
   }, []);
 
   useEffect(() => {
@@ -66,6 +71,10 @@ export default function CaptureScreen({
     if (initialMerchant !== undefined) setMerchant(initialMerchant);
   }, [initialMerchant]);
 
+  useEffect(() => {
+    if (initialDate !== undefined) setDate(initialDate);
+  }, [initialDate]);
+
   const groupedCategories = useMemo(() => {
     const roots = categories.filter((c) => !c.parentId);
     return roots.map((root) => ({
@@ -75,10 +84,11 @@ export default function CaptureScreen({
   }, [categories]);
 
   const otrosRoot = useMemo(
-    () => categories.find((c) => c.nature === 'OTHER' && !c.parentId),
+    () => categories.find((c) => c.nature === "OTHER" && !c.parentId),
     [categories],
   );
-  const isOtrosSelected = otrosRoot !== undefined && categoryId === otrosRoot.id;
+  const isOtrosSelected =
+    otrosRoot !== undefined && categoryId === otrosRoot.id;
 
   async function resolveCategoryId(): Promise<string | null> {
     // Si el usuario eligió "Otros" y escribió un texto, primero hay que
@@ -87,14 +97,16 @@ export default function CaptureScreen({
     if (isOtrosSelected && otherCategoryText.trim() && otrosRoot) {
       const normalizedInput = otherCategoryText.trim().toUpperCase();
       const existing = categories.find(
-        (c) => c.parentId === otrosRoot.id && c.name.toUpperCase() === normalizedInput,
+        (c) =>
+          c.parentId === otrosRoot.id &&
+          c.name.toUpperCase() === normalizedInput,
       );
       if (existing) return existing.id;
 
       const created = await createCategory({
         name: otherCategoryText.trim(),
-        type: type === 'income' ? 'INCOME' : 'EXPENSE',
-        nature: 'OTHER',
+        type: type === "income" ? "INCOME" : "EXPENSE",
+        nature: "OTHER",
         parentId: otrosRoot.id,
       });
       return created.id;
@@ -104,18 +116,22 @@ export default function CaptureScreen({
   }
 
   async function handleSave() {
-    const numericAmount = Number(amount.replace(',', '.'));
+    const numericAmount = Number(amount.replace(",", "."));
 
     if (!numericAmount || numericAmount <= 0) {
-      Alert.alert('Revisa el monto', 'El monto debe ser un número mayor a 0.');
+      Alert.alert("Revisa el monto", "El monto debe ser un número mayor a 0.");
       return;
     }
     if (!merchant.trim()) {
-      Alert.alert('Falta el comercio', 'Escribe dónde fue el gasto/ingreso.');
+      Alert.alert("Falta el comercio", "Escribe dónde fue el gasto/ingreso.");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      Alert.alert("Revisa la fecha", "Usa el formato AAAA-MM-DD.");
       return;
     }
     if (isOtrosSelected && !otherCategoryText.trim()) {
-      Alert.alert('Falta el nombre', 'Escribe qué tipo de categoría es.');
+      Alert.alert("Falta el nombre", "Escribe qué tipo de categoría es.");
       return;
     }
 
@@ -129,6 +145,7 @@ export default function CaptureScreen({
           merchant: merchant.trim(),
           categoryId: finalCategoryId ?? undefined,
           isPlanned,
+          date,
         });
       } else {
         await createTransaction({
@@ -137,20 +154,21 @@ export default function CaptureScreen({
           categoryId: finalCategoryId,
           type,
           isPlanned,
+          date,
         });
       }
 
       if (!isEditing) {
-        setAmount('');
-        setMerchant('');
+        setAmount("");
+        setMerchant("");
         setCategoryId(null);
-        setOtherCategoryText('');
-        setType('expense');
+        setOtherCategoryText("");
+        setType("expense");
         setIsPlanned(true);
       }
       onSaved();
     } catch (err: any) {
-      Alert.alert('Error al guardar', err.message);
+      Alert.alert("Error al guardar", err.message);
     } finally {
       setSaving(false);
     }
@@ -175,17 +193,26 @@ export default function CaptureScreen({
         onChangeText={setMerchant}
       />
 
+      <Text style={styles.label}>Fecha</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="AAAA-MM-DD"
+        value={date}
+        onChangeText={setDate}
+        maxLength={10}
+      />
+
       <Text style={styles.label}>Tipo</Text>
       <View style={styles.row}>
         <ToggleButton
           label="Gasto"
-          active={type === 'expense'}
-          onPress={() => setType('expense')}
+          active={type === "expense"}
+          onPress={() => setType("expense")}
         />
         <ToggleButton
           label="Ingreso"
-          active={type === 'income'}
-          onPress={() => setType('income')}
+          active={type === "income"}
+          onPress={() => setType("income")}
         />
       </View>
 
@@ -207,7 +234,7 @@ export default function CaptureScreen({
       {groupedCategories.map(({ root, children }) => (
         <View key={root.id} style={styles.categoryGroup}>
           <ToggleButton
-            label={`${root.icon ?? '📁'} ${root.name}`}
+            label={`${root.icon ?? "📁"} ${root.name}`}
             active={categoryId === root.id}
             onPress={() => setCategoryId(root.id)}
           />
@@ -216,7 +243,7 @@ export default function CaptureScreen({
               {children.map((child) => (
                 <ToggleButton
                   key={child.id}
-                  label={`${child.icon ?? '·'} ${child.name}`}
+                  label={`${child.icon ?? "·"} ${child.name}`}
                   active={categoryId === child.id}
                   onPress={() => setCategoryId(child.id)}
                   small
@@ -251,7 +278,7 @@ export default function CaptureScreen({
         disabled={saving}
       >
         <Text style={styles.saveButtonText}>
-          {saving ? 'Guardando...' : isEditing ? 'Guardar cambios' : 'Guardar'}
+          {saving ? "Guardando..." : isEditing ? "Guardar cambios" : "Guardar"}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -271,7 +298,11 @@ function ToggleButton({
 }) {
   return (
     <TouchableOpacity
-      style={[styles.toggle, small && styles.toggleSmall, active && styles.toggleActive]}
+      style={[
+        styles.toggle,
+        small && styles.toggleSmall,
+        active && styles.toggleActive,
+      ]}
       onPress={onPress}
     >
       <Text style={active ? styles.toggleTextActive : styles.toggleText}>
@@ -283,44 +314,44 @@ function ToggleButton({
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16 },
-  label: { fontSize: 14, fontWeight: '600', marginTop: 16, marginBottom: 6 },
+  label: { fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
   },
-  row: { flexDirection: 'row', gap: 8 },
+  row: { flexDirection: "row", gap: 8 },
   categoryGroup: { marginBottom: 10 },
   subcategoryWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
     marginTop: 6,
     marginLeft: 16,
   },
-  hint: { fontSize: 12, color: '#888', marginTop: 8 },
+  hint: { fontSize: 12, color: "#888", marginTop: 8 },
   toggle: {
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#ccc',
-    alignSelf: 'flex-start',
+    borderColor: "#ccc",
+    alignSelf: "flex-start",
   },
   toggleSmall: { paddingVertical: 6, paddingHorizontal: 10 },
-  toggleActive: { backgroundColor: '#111', borderColor: '#111' },
-  toggleText: { color: '#111' },
-  toggleTextActive: { color: '#fff' },
+  toggleActive: { backgroundColor: "#111", borderColor: "#111" },
+  toggleText: { color: "#111" },
+  toggleTextActive: { color: "#fff" },
   saveButton: {
     marginTop: 24,
     marginBottom: 40,
-    backgroundColor: '#111',
+    backgroundColor: "#111",
     borderRadius: 10,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
   },
   saveButtonDisabled: { opacity: 0.5 },
-  saveButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
 });

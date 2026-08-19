@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from '../users/users.controller';
-import { UsersService } from '../users/users.service';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { CategoriesModule } from '../categories/categories.module';
 
@@ -8,5 +8,6 @@ import { CategoriesModule } from '../categories/categories.module';
   imports: [PrismaModule, CategoriesModule],
   controllers: [UsersController],
   providers: [UsersService],
+  exports: [UsersService],
 })
 export class UserModule {}

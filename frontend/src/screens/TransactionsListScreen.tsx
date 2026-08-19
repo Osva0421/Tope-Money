@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,10 @@ import {
   RefreshControl,
   StyleSheet,
   ActivityIndicator,
-} from 'react-native';
-import { getCategories, getTransactions } from '../api/client';
-import { Category, Transaction } from '../types';
+  TouchableOpacity,
+} from "react-native";
+import { getCategories, getTransactions } from "../api/client";
+import { Category, Transaction } from "../types";
 
 export interface TransactionsListScreenHandle {
   refresh: () => void;
@@ -16,8 +17,10 @@ export interface TransactionsListScreenHandle {
 
 export default function TransactionsListScreen({
   refreshKey,
+  onEditTransaction,
 }: {
   refreshKey: number;
+  onEditTransaction: (transaction: Transaction) => void;
 }) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -32,7 +35,7 @@ export default function TransactionsListScreen({
       ]);
       // Más recientes primero
       txs.sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
       );
       setTransactions(txs);
       setCategories(cats);
@@ -47,9 +50,9 @@ export default function TransactionsListScreen({
   }, [load, refreshKey]);
 
   function categoryLabel(categoryId: string | null) {
-    if (!categoryId) return 'Sin categoría';
+    if (!categoryId) return "Sin categoría";
     const cat = categories.find((c) => c.id === categoryId);
-    if (!cat) return 'Sin categoría';
+    if (!cat) return "Sin categoría";
     return cat.icon ? `${cat.icon} ${cat.name}` : cat.name;
   }
 
@@ -83,23 +86,28 @@ export default function TransactionsListScreen({
         </View>
       }
       renderItem={({ item }) => (
-        <View style={styles.row}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => onEditTransaction(item)}
+          accessibilityRole="button"
+          accessibilityLabel={`Editar transacción de ${item.merchant}`}
+        >
           <View style={{ flex: 1 }}>
             <Text style={styles.merchant}>{item.merchant}</Text>
             <Text style={styles.meta}>
-              {categoryLabel(item.categoryId)} ·{' '}
-              {item.isPlanned ? 'Previsto' : 'Imprevisto'}
+              {categoryLabel(item.categoryId)} ·{" "}
+              {item.isPlanned ? "Previsto" : "Imprevisto"}
             </Text>
           </View>
           <Text
             style={[
               styles.amount,
-              item.type === 'income' ? styles.income : styles.expense,
+              item.type === "income" ? styles.income : styles.expense,
             ]}
           >
-            {item.type === 'income' ? '+' : '-'}${item.amount.toFixed(2)}
+            {item.type === "income" ? "+" : "-"}${item.amount.toFixed(2)}
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
     />
   );
@@ -107,18 +115,23 @@ export default function TransactionsListScreen({
 
 const styles = StyleSheet.create({
   list: { padding: 16 },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
-  emptyText: { color: '#888', textAlign: 'center' },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+  },
+  emptyText: { color: "#888", textAlign: "center" },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    borderBottomColor: "#ddd",
   },
-  merchant: { fontSize: 16, fontWeight: '600' },
-  meta: { fontSize: 13, color: '#888', marginTop: 2 },
-  amount: { fontSize: 16, fontWeight: '700' },
-  income: { color: '#1a7f37' },
-  expense: { color: '#c0392b' },
+  merchant: { fontSize: 16, fontWeight: "600" },
+  meta: { fontSize: 13, color: "#888", marginTop: 2 },
+  amount: { fontSize: 16, fontWeight: "700" },
+  income: { color: "#1a7f37" },
+  expense: { color: "#c0392b" },
 });

@@ -1,5 +1,14 @@
-import { Body, Controller, Get, Post, Patch, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { TransactionsService } from './transactions.service';
+import { CurrentUserId } from '../auth/auth-user';
 
 @Controller('transactions')
 export class TransactionsController {
@@ -14,15 +23,17 @@ export class TransactionsController {
       merchant: string;
       type: string;
       isPlanned: boolean;
-      userId: string;
       categoryId?: string;
+      creditCardId?: string;
+      date?: string;
     },
+    @CurrentUserId() userId: string,
   ) {
-    return this.transactionsService.create(body);
+    return this.transactionsService.create({ ...body, userId });
   }
 
   @Get()
-  async findAll(@Query('userId') userId: string) {
+  async findAll(@CurrentUserId() userId: string) {
     return this.transactionsService.findAllByUser(userId);
   }
 
@@ -36,8 +47,11 @@ export class TransactionsController {
       description?: string;
       isPlanned?: boolean;
       categoryId?: string;
+      creditCardId?: string | null;
+      date?: string;
     },
+    @CurrentUserId() userId: string,
   ) {
-    return this.transactionsService.updateTransaction(id, body);
+    return this.transactionsService.updateTransaction(id, { ...body, userId });
   }
 }
